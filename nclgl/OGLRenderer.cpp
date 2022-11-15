@@ -160,6 +160,16 @@ bool OGLRenderer::HasInitialised() const{
 	return init;
 }
 
+void OGLRenderer::SetShaderLight(const Light& l)
+{
+	glUniform3fv(glGetUniformLocation(currentShader -> GetProgram(), "lightPos"), 1, (float*)&l.GetPosition());
+
+	glUniform4fv(glGetUniformLocation(currentShader -> GetProgram(),"lightColour"), 1, (float*)&l.GetColour());
+	
+	glUniform1f(glGetUniformLocation(currentShader -> GetProgram(),"lightRadius"), l.GetRadius());
+
+}
+
 /*
 Resizes the rendering area. Should only be called by the Window class!
 Does lower bounds checking on input values, so should be reasonably safe

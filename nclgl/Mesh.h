@@ -53,6 +53,8 @@ public:
 	void DrawSubMesh(int i);
 
 	static Mesh* GenerateTriangle();
+	static Mesh* GenerateQuad();
+
 
 
 	static Mesh* LoadFromMeshFile(const std::string& name);
@@ -62,8 +64,9 @@ public:
 		return primCount / 3;
 	}
 
-	unsigned int GetJointCount() const {
-		return (unsigned int)jointNames.size();
+	unsigned int GetJointCount() const 
+	{
+	 	return (unsigned int)jointNames.size();
 	}
 
 
@@ -88,6 +91,12 @@ public:
 
 protected:
 	void	BufferData();
+	void GenerateNormals();
+	bool GetVertexIndicesForTri(unsigned int i, unsigned int& a, unsigned int& b, unsigned int& c) const;
+
+	void GenerateTangents();
+	Vector4 GenerateTangent(int a, int b, int c);
+
 
 	GLuint	arrayObject;
 
@@ -106,6 +115,8 @@ protected:
 
 	Vector4*		weights;
 	int*			weightIndices;
+
+
 
 	unsigned int*	indices;
 

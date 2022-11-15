@@ -9,8 +9,7 @@ public:
 
 	Vector3 GetHeightmapSize() const { return heightmapSize; }
 
-	Vector4 calculateColours(float a);
-
+	
 protected:
 	Vector3 heightmapSize;
 };

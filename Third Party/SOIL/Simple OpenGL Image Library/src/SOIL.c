@@ -265,7 +265,7 @@ unsigned int
 	SOIL_free_image_data( img );
 	/*	and return the handle, such as it is	*/
 	return tex_id;
-}
+} 
 
 unsigned int
 	SOIL_load_OGL_cubemap
@@ -297,11 +297,12 @@ unsigned int
 		return 0;
 	}
 	/*	capability checking	*/
-	if( query_cubemap_capability() != SOIL_CAPABILITY_PRESENT )
-	{
-		result_string_pointer = "No cube map capability present";
-		return 0;
-	}
+	//IT'S 2022 WHO CARES
+	//if( query_cubemap_capability() != SOIL_CAPABILITY_PRESENT )
+	//{
+	//	result_string_pointer = "No cube map capability present";
+	//	return 0;
+	//}
 	/*	1st face: try to load the image	*/
 	img = SOIL_load_image( x_pos_file, &width, &height, &channels, force_channels );
 	/*	channels holds the original number of channels, which may have been forced	*/
@@ -1909,12 +1910,14 @@ int query_cubemap_capability( void )
 	/*	check for the capability	*/
 	if( has_cubemap_capability == SOIL_CAPABILITY_UNKNOWN )
 	{
+		const char* extensions = (char const*)glGetString(GL_EXTENSIONS);
+
 		/*	we haven't yet checked for the capability, do so	*/
 		if(
-			(NULL == strstr( (char const*)glGetString( GL_EXTENSIONS ),
+			(NULL == strstr(extensions,
 				"GL_ARB_texture_cube_map" ) )
 		&&
-			(NULL == strstr( (char const*)glGetString( GL_EXTENSIONS ),
+			(NULL == strstr(extensions,
 				"GL_EXT_texture_cube_map" ) )
 			)
 		{

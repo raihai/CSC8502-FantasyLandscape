@@ -19,9 +19,8 @@ SceneNode::~SceneNode(void) {
 
 void SceneNode::AddChild(SceneNode* s) {
 	children.push_back(s);
-	//if (s->parent != this) {
-		s->parent = this;
-	//}
+	s->parent = this;
+
 }
 
 void SceneNode::Draw(const OGLRenderer& r) {

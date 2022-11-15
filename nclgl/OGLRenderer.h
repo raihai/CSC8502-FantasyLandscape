@@ -35,6 +35,7 @@ _-_-_-_-_-_-_-""  ""
 #include "Window.h"
 #include "Shader.h"
 #include "Mesh.h"
+#include "Light.h"
 
 using std::vector;
 
@@ -58,6 +59,7 @@ public:
 	bool			HasInitialised() const;	
 	
 protected:
+	void			SetShaderLight(const Light& l);
 	virtual void	Resize(int x, int y);	
 	void			UpdateShaderMatrices();
 	void			BindShader(Shader*s);
