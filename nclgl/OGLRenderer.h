@@ -62,6 +62,7 @@ protected:
 	void			SetShaderLight(const Light& l);
 	virtual void	Resize(int x, int y);	
 	void			UpdateShaderMatrices();
+	void			MeshShaderMatrices();
 	void			BindShader(Shader*s);
 	void			SetTextureRepeating(GLuint target, bool state);
 

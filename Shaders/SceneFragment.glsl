@@ -11,8 +11,18 @@ vec4 colour;
 out vec4 fragColour;
 
 void main (void) {
-fragColour = IN.colour;
-if(useTexture > 0 ) {
-	fragColour *= texture(diffuseTex, IN.texCoord);
+
+	
+	if (texture(diffuseTex, IN.texCoord).a < 0.5)
+	{
+		discard;
 	}
+
+	fragColour = IN.colour;
+
+	if(useTexture > 0 ) 
+	{
+		fragColour *= texture(diffuseTex, IN.texCoord);
+	}
+
 }

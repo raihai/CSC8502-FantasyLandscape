@@ -4,15 +4,24 @@
 #include "../nclgl/Shader.h"
 #include "../nclgl/Camera.h"
 #include "../nclgl/MeshMaterial.h"
-#include "Tree.h"
+#include "../nclgl//MeshAnimation.h"
 #include <algorithm>
+#include <random>
+#include <cstdlib>
 
 #define SHADOWSIZE 2048
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+
 	quad = Mesh::GenerateQuad();
 	tree = Mesh::LoadFromMeshFile("Tree10_3.msh");
 	material = new MeshMaterial("Tree10_3.mat");
+
+	charMesh = Mesh::LoadFromMeshFile("Rumba Dancing.msh");
+	charAnim = new MeshAnimation("RumbaDance.anm");
+	charMat = new MeshMaterial("Rumba Dancing.mat");
 
 	heightMap = new HeightMap(TEXTUREDIR "noise.png");
 
@@ -33,18 +42,19 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	reflectShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl");
 	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
 	lightShader = new Shader("BumpVertex.glsl", "BumpFragment.glsl");
-	shader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	treeShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	charShader = new Shader("SkinningVertex.glsl", "SceneFragment.glsl");
+
 
 	if (!reflectShader->LoadSuccess() ||
 		!skyboxShader->LoadSuccess() ||
-		!lightShader->LoadSuccess()){
+		!lightShader->LoadSuccess()|| !treeShader -> LoadSuccess() || !charShader -> LoadSuccess()){
 		return;
 	}
 
 	Vector3 heightmapSize = heightMap -> GetHeightmapSize();
 	camera = new Camera(-45.0f, 0.0f, heightmapSize * Vector3(0.5f, 5.0f, 0.5f));
 	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 1), heightmapSize.x);
-
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 	root = new SceneNode();
@@ -61,20 +71,41 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		matTextures.emplace_back(texID);
 	}
 
+	srand(time(NULL));
 	for (int i = 0; i < 5; ++i) {
-		 SceneNode * s = new SceneNode();
-		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.5f));
-		s->SetTransform(Matrix4::Translation(Vector3(0, 100.0f, -300.0f + 100.0f + 100 * i)));
-		s->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
-		s->SetBoundingRadius(100.0f);
+		SceneNode* s = new SceneNode();
+		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
+
+		s->SetTransform(Matrix4::Translation(Vector3(rand() % int(heightmapSize.x), 100.0f, rand() % int(heightmapSize.z))));
+		s->SetModelScale(Vector3(10.0f, 10.0f, 10.0f));
+		//s->SetBoundingRadius(10.0f);
 		s->SetMesh(tree);
-		s->SetTexture(matTextures[i]);
+
+		for (int i = 0; i < tree->GetSubMeshCount(); ++i)
+		{
+			s->SetTexture(matTextures[i]);
+			SetTextureRepeating(matTextures[i], true);
+		}
 		root->AddChild(s);
 	}
 
-	root->AddChild(new Tree(tree));
+	root->Update(0);
 
-	
+	for (int i = 0; i < charMesh->GetSubMeshCount(); ++i) {
+		const MeshMaterialEntry* matEntry =
+			charMat->GetMaterialForLayer(i);
+
+		const string* filename = nullptr;
+		matEntry->GetEntry("Diffuse", &filename);
+		string path = TEXTUREDIR + *filename;
+		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO,
+			SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+		charTextures.emplace_back(texID);
+		SetTextureRepeating(charTextures[i], true);
+	}
+
+
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -82,6 +113,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	waterRotate = 0.0f;
 	waterCycle = 0.0f;
+	currentFrame = 0;
+	frameTime = 0.0f;
 	init = true;
 }
 
@@ -92,10 +125,13 @@ Renderer ::~Renderer(void) {
 	delete reflectShader;
 	delete skyboxShader;
 	delete lightShader;
+	delete treeShader;
+	delete charShader;
 	delete light;
 	delete root;
 	delete tree;
 	delete material;
+	delete charMat;
 
 }
 
@@ -104,27 +140,63 @@ void Renderer::UpdateScene(float dt) {
 	viewMatrix = camera -> BuildViewMatrix();
 	waterRotate += dt * 2.0f; //2 degrees a second
 	waterCycle += dt * 0.25f; // 10 units a second
+	frameFrustum.FromMatrix(projMatrix * viewMatrix);
+
+	frameTime -= dt;
+	while (frameTime < 0.0f) {
+		currentFrame = (currentFrame + 1) % charAnim->GetFrameCount();
+		frameTime += 1.0f / charAnim->GetFrameRate();
+	}
+	root->Update(dt);
 
 }
 
 void Renderer::RenderScene() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-
 	DrawSkybox();
 	DrawHeightmap();
+	DrawCharAnim();
+	BuildNodeLists(root);
+	SortNodeLists();
+	BindShader(treeShader);
+	UpdateShaderMatrices();
+	DrawNodes();
+	ClearNodeLists();
+
 	DrawWater();
-	
 }
 
-void Renderer::DrawSkybox() {
-	glDepthMask(GL_FALSE);
 
-	BindShader(skyboxShader);
+void Renderer::DrawCharAnim()
+{
+	BindShader(charShader);
+	glUniform1i(glGetUniformLocation(charShader->GetProgram(), "diffuseTex"), 0);
+
 	UpdateShaderMatrices();
-	quad -> Draw();
+
+	vector<Matrix4> frameMatrices;
+
+	const Matrix4* invBindPose = charMesh->GetInverseBindPose();
+	const Matrix4* frameData = charAnim->GetJointData(currentFrame);
+
+	for (unsigned int i = 0; i < charMesh->GetJointCount(); ++i)
+	{
+		frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+	}
+
+
+	int j = glGetUniformLocation(charShader->GetProgram(),"joints");
+	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+
+
+	for (int i = 0; i < charMesh->GetSubMeshCount(); ++i)
+	{
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, charTextures[i]);
+		charMesh->DrawSubMesh(i);
+	}
 	
-	glDepthMask(GL_TRUE);
 }
 
 void Renderer::DrawNodes()
@@ -140,33 +212,37 @@ void Renderer::DrawNodes()
 
 void Renderer::DrawNode(SceneNode* n)
 {
-
-	if (n->GetMesh()) {
-		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
-
-		glUniformMatrix4fv( glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, model.values);
-
-		glUniform4fv(glGetUniformLocation(shader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
-	
-		//texture = n->GetTexture();
+	if (n->GetMesh())
+	{
+		BindShader(treeShader);
+		
+		glUniform1i(glGetUniformLocation(treeShader->GetProgram(), "diffuseTex"), 0);
+		glUniform4fv(glGetUniformLocation(treeShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 
 		for (int i = 0; i < tree->GetSubMeshCount(); ++i)
 		{
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, matTextures[i]);
+			glUniform1i(glGetUniformLocation(treeShader->GetProgram(), "useTexture"), matTextures[i]);
+		
+			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+
+			glUniformMatrix4fv(glGetUniformLocation(treeShader->GetProgram(), "modelMatrix"), 1, false, model.values);
+	
+
+			MeshShaderMatrices();
 			tree->DrawSubMesh(i);
 		}
-
 	}
 
 }
 
 void Renderer::BuildNodeLists(SceneNode* from)
 {
-	if(frameFrustum.InsideFrustum(*from)) {
+	if (frameFrustum.InsideFrustum(*from)) {
 		Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
 		from->SetCameraDistance(Vector3::Dot(dir, dir));
-		
+
 		if (from->GetColour().w < 1.0f) {
 			transparentNodeList.push_back(from);
 		}
@@ -174,8 +250,7 @@ void Renderer::BuildNodeLists(SceneNode* from)
 			nodeList.push_back(from);
 		}
 	}
-
-	for (vector <SceneNode*>::const_iterator i = from->GetChildIteratorStart();
+	for(vector <SceneNode*>::const_iterator i = from->GetChildIteratorStart();
 		i != from->GetChildIteratorEnd(); ++i) {
 		BuildNodeLists((*i));
 	}
@@ -195,6 +270,18 @@ void Renderer::ClearNodeLists()
 {
 	transparentNodeList.clear();
 	nodeList.clear();
+}
+
+
+
+void Renderer::DrawSkybox() {
+	glDepthMask(GL_FALSE);
+
+	BindShader(skyboxShader);
+	UpdateShaderMatrices();
+	quad->Draw();
+
+	glDepthMask(GL_TRUE);
 }
 
 
@@ -239,10 +326,7 @@ void Renderer::DrawWater() {
 
 	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
 	
-	
-
 	UpdateShaderMatrices();
 	// SetShaderLight (* light ); // No lighting in this shader !
 	quad -> Draw();
-	ClearNodeLists();
 }

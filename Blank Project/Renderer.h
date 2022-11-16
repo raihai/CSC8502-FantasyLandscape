@@ -2,13 +2,14 @@
 #include "../nclgl/OGLRenderer.h"
 #include "../nclgl/SceneNode.h"
 #include "../nclgl/Frustum.h"
-#include "Tree.h";
+#include "Tree.h"
 
 class Camera;
 class Shader;
 class HeightMap;
 class Mesh;
 class MeshMaterial;
+class MeshAnimation;
 
 class Renderer : public OGLRenderer {
 public:
@@ -22,6 +23,7 @@ protected:
 	void DrawWater();
 	void DrawSkybox();
 	
+	void DrawCharAnim();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
 
@@ -29,23 +31,37 @@ protected:
 	void SortNodeLists();
 	void ClearNodeLists();
 
+
 	
 	Shader * lightShader;
 	Shader * reflectShader;
 	Shader * skyboxShader;
-	Shader* shader;
+	Shader* treeShader;
+	Shader* charShader;
 	
 	HeightMap * heightMap;
 	Mesh * quad;
 	Mesh* tree;
+	Mesh* charMesh;
+	
+	MeshAnimation* charAnim;
+	MeshMaterial* charMat;
+	vector <GLuint> charTextures;
 
 	MeshMaterial* material;
 	vector <GLuint> matTextures;
+	
+
+
+
 
 	SceneNode* root;
 
 	Light * light;
 	Camera * camera;
+	int currentFrame;
+	float frameTime;
+
 	Frustum frameFrustum;
 
 	GLuint cubeMap;
