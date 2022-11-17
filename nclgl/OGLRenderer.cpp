@@ -246,9 +246,19 @@ void OGLRenderer::SetTextureRepeating(GLuint target, bool repeating)
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 
-
-
 }
+
+void OGLRenderer::SetTextureFill(GLuint target)
+{
+	glBindTexture(GL_TEXTURE_2D, target);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,  GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,  GL_CLAMP);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+
 
 #ifdef OPENGL_DEBUGGING
 void OGLRenderer::DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)	{

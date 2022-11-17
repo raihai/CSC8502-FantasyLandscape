@@ -12,22 +12,20 @@
 #define SHADOWSIZE 2048
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
 
 	quad = Mesh::GenerateQuad();
 	tree = Mesh::LoadFromMeshFile("Tree10_3.msh");
 	material = new MeshMaterial("Tree10_3.mat");
 
-	charMesh = Mesh::LoadFromMeshFile("Rumba Dancing.msh");
-	charAnim = new MeshAnimation("RumbaDance.anm");
-	charMat = new MeshMaterial("Rumba Dancing.mat");
+	charMesh = Mesh::LoadFromMeshFile("Ch50_nonPBR.msh");
+	charAnim = new MeshAnimation("ch50 Dance.anm");
+	charMat = new MeshMaterial("Ch50_nonPBR.mat");
 
-	heightMap = new HeightMap(TEXTUREDIR "noise.png");
+	heightMap = new HeightMap(TEXTUREDIR"finalTerrain.png");
 
 	waterTex = SOIL_load_OGL_texture(TEXTUREDIR "water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	earthTex = SOIL_load_OGL_texture(TEXTUREDIR "ground4_diffuse.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	earthBump = SOIL_load_OGL_texture(TEXTUREDIR "ground4_Normal.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	earthTex = SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	earthBump = SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR "rusted_west.jpg", TEXTUREDIR "rusted_east.jpg", TEXTUREDIR "rusted_up.jpg", TEXTUREDIR "rusted_down.jpg",
 		TEXTUREDIR "rusted_south.jpg", TEXTUREDIR "rusted_north.jpg", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
@@ -43,7 +41,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
 	lightShader = new Shader("BumpVertex.glsl", "BumpFragment.glsl");
 	treeShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
-	charShader = new Shader("SkinningVertex.glsl", "SceneFragment.glsl");
+	charShader = new Shader("SkinningVertex.glsl", "TexturedFragment.glsl");
 
 
 	if (!reflectShader->LoadSuccess() ||
@@ -104,7 +102,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		SetTextureRepeating(charTextures[i], true);
 	}
 
-
+	
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -153,7 +151,7 @@ void Renderer::UpdateScene(float dt) {
 
 void Renderer::RenderScene() {
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
+	
 	DrawSkybox();
 	DrawHeightmap();
 	DrawCharAnim();
@@ -163,7 +161,6 @@ void Renderer::RenderScene() {
 	UpdateShaderMatrices();
 	DrawNodes();
 	ClearNodeLists();
-
 	DrawWater();
 }
 
@@ -179,6 +176,12 @@ void Renderer::DrawCharAnim()
 
 	const Matrix4* invBindPose = charMesh->GetInverseBindPose();
 	const Matrix4* frameData = charAnim->GetJointData(currentFrame);
+
+	Vector3 hSize = heightMap->GetHeightmapSize();
+	
+	Matrix4 model = Matrix4::Translation(Vector3(int(hSize.x/2), 100.0f, int(hSize.z/2))) * Matrix4::Scale(Vector3(100.0f, 100.0f, 100.0f));
+
+	glUniformMatrix4fv(glGetUniformLocation(charShader->GetProgram(), "modelMatrix"), 1, false, model.values);
 
 	for (unsigned int i = 0; i < charMesh->GetJointCount(); ++i)
 	{
@@ -323,6 +326,8 @@ void Renderer::DrawWater() {
 
 	Vector3 hSize = heightMap -> GetHeightmapSize();
 	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
+
+	
 
 	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
 	

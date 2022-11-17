@@ -54,7 +54,6 @@ protected:
 
 
 
-
 	SceneNode* root;
 
 	Light * light;

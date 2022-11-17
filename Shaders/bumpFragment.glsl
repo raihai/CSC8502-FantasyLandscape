@@ -16,6 +16,7 @@ vec3 worldPos ;
 out vec4 fragColour ;
 
 void main ( void ) {
+
 	vec3 incident = normalize( lightPos - IN.worldPos );
 	vec3 viewDir = normalize( cameraPos - IN.worldPos );
 	vec3 halfDir = normalize( incident + viewDir);
@@ -26,14 +27,14 @@ void main ( void ) {
 	bumpNormal = normalize( TBN * normalize(bumpNormal * 2.0 - 1.0));
 
 	float lambert = max(dot(incident, bumpNormal), 0.0f);
-float distance = length ( lightPos - IN.worldPos );
-float attenuation = 1.0f - clamp ( distance / lightRadius ,0.0 ,1.0);
+	float distance = length ( lightPos - IN.worldPos );
+	float attenuation = 1.0f - clamp ( distance / lightRadius ,0.0 ,1.0);
 
-float specFactor = clamp( dot( halfDir , bumpNormal ) ,0.0 ,1.0);
-specFactor = pow( specFactor , 60.0 );
-vec3 surface = ( diffuse.rgb * lightColour.rgb );
-fragColour.rgb = surface * lambert * attenuation ;
-fragColour.rgb += ( lightColour.rgb * specFactor )* attenuation *0.33;
-fragColour.rgb += surface * 0.1f;
-fragColour.a = diffuse.a ;
+	float specFactor = clamp( dot( halfDir , bumpNormal ) ,0.0 ,1.0);
+	specFactor = pow( specFactor , 30.0 );
+	vec3 surface = ( diffuse.rgb * lightColour.rgb );
+	fragColour.rgb = surface * lambert * attenuation ;
+	fragColour.rgb += ( lightColour.rgb * specFactor )* attenuation *0.1;
+	fragColour.rgb += surface * 0.1f;
+	fragColour.a = diffuse.a ;
  }
