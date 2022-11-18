@@ -18,11 +18,17 @@ int main()	{
 	while(w.UpdateWindow()  && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)){
 
 		renderer.UpdateScene(w.GetTimer()->GetTimeDeltaSeconds());
+		//if (Window::GetKeyboard()->KeyDown(KEYBOARD_T)) {
+			
+		//}
+
 		renderer.RenderScene();
 		renderer.SwapBuffers();
+
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_F5)) {
 			Shader::ReloadAllShaders();
 		}
+
 	}
 	return 0;
 }

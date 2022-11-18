@@ -31,10 +31,10 @@ void main ( void ) {
 	float attenuation = 1.0f - clamp ( distance / lightRadius ,0.0 ,1.0);
 
 	float specFactor = clamp( dot( halfDir , bumpNormal ) ,0.0 ,1.0);
-	specFactor = pow( specFactor , 30.0 );
+	specFactor = pow( specFactor , 10.0 );
 	vec3 surface = ( diffuse.rgb * lightColour.rgb );
 	fragColour.rgb = surface * lambert * attenuation ;
-	fragColour.rgb += ( lightColour.rgb * specFactor )* attenuation *0.1;
-	fragColour.rgb += surface * 0.1f;
+	fragColour.rgb += ( lightColour.rgb * specFactor )* attenuation * 0.1;
+	fragColour.rgb += surface * 0.3f;
 	fragColour.a = diffuse.a ;
  }

@@ -17,8 +17,13 @@ public:
 	~Renderer(void);
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
+
 	
 protected:
+	void PresentScene();
+	void DrawPostProcess();
+	void DrawScene();
+
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
@@ -38,9 +43,14 @@ protected:
 	Shader * skyboxShader;
 	Shader* treeShader;
 	Shader* charShader;
+
+	Shader* sceneShader;
+	Shader * processShader;
+
 	
 	HeightMap * heightMap;
 	Mesh * quad;
+	Mesh* postQuad;
 	Mesh* tree;
 	Mesh* charMesh;
 	
@@ -51,9 +61,6 @@ protected:
 	MeshMaterial* material;
 	vector <GLuint> matTextures;
 	
-
-
-
 	SceneNode* root;
 
 	Light * light;
@@ -67,6 +74,11 @@ protected:
 	GLuint waterTex;
 	GLuint earthTex;
 	GLuint earthBump;
+
+	GLuint bufferFBO;
+	GLuint processFBO;
+	GLuint bufferColourTex[2];
+	GLuint bufferDepthTex;
 
 	float sceneTime;
 	float waterRotate;
