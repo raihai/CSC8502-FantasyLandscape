@@ -50,7 +50,6 @@ protected:
 	
 	HeightMap * heightMap;
 	Mesh * quad;
-	Mesh* postQuad;
 	Mesh* tree;
 	Mesh* charMesh;
 	
