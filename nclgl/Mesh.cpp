@@ -264,7 +264,7 @@ void Mesh::GenerateTangents()
 {
 	if(!textureCoords) 
 	{
-	return;
+		return;
 	}
 
 	if (!tangents) {

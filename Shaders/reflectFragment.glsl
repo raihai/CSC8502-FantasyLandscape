@@ -5,7 +5,7 @@ uniform samplerCube cubeTex ;
 uniform vec3 cameraPos ;
 
 in Vertex {
-vec4 colour ;
+vec3 colour ;
 vec2 texCoord ;
 vec3 normal ;
 vec3 worldPos ;

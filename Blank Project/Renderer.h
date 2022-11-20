@@ -2,7 +2,7 @@
 #include "../nclgl/OGLRenderer.h"
 #include "../nclgl/SceneNode.h"
 #include "../nclgl/Frustum.h"
-#include "Tree.h"
+
 
 class Camera;
 class Shader;
@@ -17,11 +17,10 @@ public:
 	~Renderer(void);
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
-
-	
-protected:
 	void PresentScene();
 	void DrawPostProcess();
+
+protected:
 	void DrawScene();
 
 	void DrawHeightmap();
@@ -72,7 +71,9 @@ protected:
 	GLuint cubeMap;
 	GLuint waterTex;
 	GLuint earthTex;
-	GLuint earthBump;
+	GLuint grassTex;
+	GLuint rockTex;
+	GLuint rockBump;
 
 	GLuint bufferFBO;
 	GLuint processFBO;

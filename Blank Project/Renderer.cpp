@@ -14,8 +14,6 @@ const int POST_PASSES = 10;
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
-	//glEnable(GL_CULL_FACE);
-
 	quad = Mesh::GenerateQuad();
 	
 	tree = Mesh::LoadFromMeshFile("Tree10_3.msh");
@@ -28,17 +26,22 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	heightMap = new HeightMap(TEXTUREDIR"finalTerrain.png");
 
 	waterTex = SOIL_load_OGL_texture(TEXTUREDIR "water.TGA", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	earthTex = SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	earthBump = SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR "nx.png", TEXTUREDIR "px.png", TEXTUREDIR "py.png", TEXTUREDIR "ny.png",
-		TEXTUREDIR "pz.png", TEXTUREDIR "nz.png", SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
-	if (!earthTex || !earthBump || !cubeMap || !waterTex) {
+	earthTex = SOIL_load_OGL_texture(TEXTUREDIR "ground.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	grassTex = SOIL_load_OGL_texture(TEXTUREDIR "grass.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	rockTex = SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	rockBump = SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
+	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR "fluffballdayleft.png", TEXTUREDIR "fluffballdayright.png", TEXTUREDIR "fluffballdaytop.png", TEXTUREDIR"fluffballdaybottom.png",
+		TEXTUREDIR "fluffballdayfront.png", TEXTUREDIR "fluffballdayback.png",SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+
+	if (!earthTex || !rockTex || !cubeMap || !waterTex || !grassTex || !rockBump) {
 		return;
 	}
 
 	SetTextureRepeating(earthTex, true);
-	SetTextureRepeating(earthBump, true);
+	SetTextureRepeating(grassTex, true);
+	SetTextureRepeating(rockTex, true);
 	SetTextureRepeating(waterTex, true);
 
 
@@ -60,7 +63,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 	Vector3 heightmapSize = heightMap -> GetHeightmapSize();
 	camera = new Camera(-45.0f, 0.0f, heightmapSize * Vector3(0.5f, 5.0f, 0.5f));
-	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 1), heightmapSize.x);
+	light = new Light(heightmapSize * Vector3(0.5f, 2.0f, 0.5f), Vector4(1, 1, 1, 1), heightmapSize.x);
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 	root = new SceneNode();
@@ -82,7 +85,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 		s->SetTransform(Matrix4::Translation(Vector3(rand() % int(heightmapSize.x), 100.0f, rand() % int(heightmapSize.z))));
 		s->SetModelScale(Vector3(20.0f, 20.0f, 20.0f));
-		//s->SetBoundingRadius(10.0f);
+		s->SetBoundingRadius(100.0f);
 		s->SetMesh(tree);
 
 		for (int i = 0; i < tree->GetSubMeshCount(); ++i)
@@ -125,13 +128,13 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	}
 
-	glGenFramebuffers(1, &bufferFBO); // We ’ll render the scene into this
-	glGenFramebuffers(1, &processFBO); // And do post processing in this
+	glGenFramebuffers(1, &bufferFBO); 
+	glGenFramebuffers(1, &processFBO); 
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D, bufferDepthTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0); // We can check FBO attachment success using this command !
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0); 
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
 GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0]) {
@@ -195,29 +198,28 @@ void Renderer::UpdateScene(float dt) {
 
 
 void Renderer::RenderScene() {
-	DrawScene();
-	//DrawPostProcess();
-	//PresentScene();
+	
+		DrawScene();
 }
+
+
+
 
 void Renderer::DrawScene()
 {
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
+	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
 	BindShader(sceneShader);
-
 	UpdateShaderMatrices();
 
 	DrawSkybox();
 	DrawHeightmap();
-
+	DrawCharAnim();
 	BuildNodeLists(root);
 	SortNodeLists();
 	DrawNodes();
 	ClearNodeLists();
-
-	//DrawWater();
+	DrawWater();
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -281,7 +283,7 @@ void Renderer::DrawCharAnim()
 {
 	BindShader(charShader);
 	glUniform1i(glGetUniformLocation(charShader->GetProgram(), "diffuseTex"), 0);
-	UpdateShaderMatrices();
+	MeshShaderMatrices();
 
 	vector<Matrix4> frameMatrices;
 	const Matrix4* invBindPose = charMesh->GetInverseBindPose();
@@ -298,11 +300,12 @@ void Renderer::DrawCharAnim()
 
 	int j = glGetUniformLocation(charShader->GetProgram(),"joints");
 	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
-
+	
 	for (int i = 0; i < charMesh->GetSubMeshCount(); ++i)
 	{
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, charTextures[i]);
+		
 		charMesh->DrawSubMesh(i);
 	}
 }
@@ -380,29 +383,49 @@ void Renderer::DrawSkybox() {
 	glDepthMask(GL_FALSE);
 
 	BindShader(skyboxShader);
+	viewMatrix = camera->BuildViewMatrix();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+
 	UpdateShaderMatrices();
 	quad->Draw();
 	glDepthMask(GL_TRUE);
 }
 
 void Renderer::DrawHeightmap() {
-	BindShader(lightShader);
-	SetShaderLight(*light);
-	glUniform3fv(glGetUniformLocation(lightShader -> GetProgram(),
-	"cameraPos"), 1, (float*)&camera -> GetPosition());
 	
-	glUniform1i(glGetUniformLocation(lightShader -> GetProgram(), "diffuseTex"), 0);
+	BindShader(lightShader);
+
+	
+	glUniform1i(glGetUniformLocation(lightShader -> GetProgram(), "ground"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, earthTex);
 
-	glUniform1i(glGetUniformLocation(lightShader -> GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "grass"), 1);
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, earthBump);
+	glBindTexture(GL_TEXTURE_2D, grassTex);
 
-	modelMatrix.ToIdentity(); // New !
-	textureMatrix.ToIdentity();	// New !
+	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "rocks"), 2);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, rockTex);
+
+	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "rockBump"), 3);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, rockBump);
+
+	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+
+	Vector3 hSize = heightMap->GetHeightmapSize();
+	glUniform1f(glGetUniformLocation(lightShader->GetProgram(), "vHeight"), hSize.y);
+
+	modelMatrix.ToIdentity();
+	textureMatrix.ToIdentity();
+
+	viewMatrix = camera->BuildViewMatrix();
+	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
 	UpdateShaderMatrices();
+	SetShaderLight(*light);
+
 	heightMap -> Draw();
 	
 }
@@ -421,9 +444,10 @@ void Renderer::DrawWater() {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
 
 	Vector3 hSize = heightMap -> GetHeightmapSize();
-	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
+	modelMatrix = Matrix4::Translation(Vector3(hSize.x * 0.5f, 30.0f, hSize.z *0.5f)) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
 	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
 	
+	textureMatrix.ToIdentity();
 	UpdateShaderMatrices();
 
 	quad -> Draw();
