@@ -19,10 +19,11 @@ public:
 	void UpdateScene(float dt) override;
 	void PresentScene();
 	void DrawPostProcess();
+	
 
 protected:
 	void DrawScene();
-
+	void DrawFog();
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
@@ -46,6 +47,7 @@ protected:
 	Shader* sceneShader;
 	Shader * processShader;
 
+
 	
 	HeightMap * heightMap;
 	Mesh * quad;
@@ -61,7 +63,7 @@ protected:
 	
 	SceneNode* root;
 
-	Light * light;
+	Light* light;
 	Camera * camera;
 	int currentFrame;
 	float frameTime;
@@ -83,7 +85,10 @@ protected:
 	float sceneTime;
 	float waterRotate;
 	float waterCycle;
+	float skyboxRotate;
 
+
+	Vector4* fogColour;
 	vector <SceneNode*> transparentNodeList;
 	vector <SceneNode*> nodeList;
 	

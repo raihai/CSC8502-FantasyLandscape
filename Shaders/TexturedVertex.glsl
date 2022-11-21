@@ -5,12 +5,15 @@ uniform mat4 projMatrix;
 uniform mat4 textureMatrix;
 
 
-in vec3 position; 
+
+in vec3 position ;
+
 in vec2 texCoord;
 
 out Vertex {
-	vec2 texCoord;	
-} OUT;
+vec2 texCoord ;
+
+} OUT ;
 
 void main(void) {
 	mat4 mvp = projMatrix * viewMatrix * modelMatrix;

@@ -10,6 +10,7 @@
 #include <cstdlib>
 
 const int POST_PASSES = 10;
+const float ROTATE_SPEED = 2.5f;
 
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
@@ -19,9 +20,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	tree = Mesh::LoadFromMeshFile("Tree10_3.msh");
 	material = new MeshMaterial("Tree10_3.mat");
 
-	charMesh = Mesh::LoadFromMeshFile("Ch50_nonPBR.msh");
-	charAnim = new MeshAnimation("ch50 Dance.anm");
-	charMat = new MeshMaterial("Ch50_nonPBR.mat");
+	charMesh = Mesh::LoadFromMeshFile("Ch45_nonPBR.msh");
+	charAnim = new MeshAnimation("chTaunt.anm");
+	charMat = new MeshMaterial("Ch45_nonPBR.mat");
 
 	heightMap = new HeightMap(TEXTUREDIR"finalTerrain.png");
 
@@ -30,7 +31,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	earthTex = SOIL_load_OGL_texture(TEXTUREDIR "ground.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	grassTex = SOIL_load_OGL_texture(TEXTUREDIR "grass.jpg", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	rockTex = SOIL_load_OGL_texture(TEXTUREDIR "Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
-	rockBump = SOIL_load_OGL_texture(TEXTUREDIR "Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	rockBump = SOIL_load_OGL_texture(TEXTUREDIR "normal1.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	cubeMap = SOIL_load_OGL_cubemap(TEXTUREDIR "fluffballdayleft.png", TEXTUREDIR "fluffballdayright.png", TEXTUREDIR "fluffballdaytop.png", TEXTUREDIR"fluffballdaybottom.png",
 		TEXTUREDIR "fluffballdayfront.png", TEXTUREDIR "fluffballdayback.png",SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
@@ -43,7 +44,9 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	SetTextureRepeating(grassTex, true);
 	SetTextureRepeating(rockTex, true);
 	SetTextureRepeating(waterTex, true);
+	SetTextureRepeating(rockBump, true);
 
+	fogColour = new Vector4(0.68f, 0.71f, 0.79f, 1.0);
 
 	reflectShader = new Shader("reflectVertex.glsl", "reflectFragment.glsl");
 	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
@@ -79,11 +82,11 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	}
 
 	srand(time(NULL));
-	for (int i = 0; i < 10; ++i) {
+	for (int i = 0; i < 15; ++i) {
 		SceneNode* s = new SceneNode();
 		s->SetColour(Vector4(1.0f, 1.0f, 1.0f, 1.0f));
 
-		s->SetTransform(Matrix4::Translation(Vector3(rand() % int(heightmapSize.x), 100.0f, rand() % int(heightmapSize.z))));
+		s->SetTransform(Matrix4::Translation(Vector3(rand() % int(heightmapSize.x * 0.8f), 100.0f, rand() % int(heightmapSize.z * 0.3f))));
 		s->SetModelScale(Vector3(20.0f, 20.0f, 20.0f));
 		s->SetBoundingRadius(100.0f);
 		s->SetMesh(tree);
@@ -137,7 +140,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0); 
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
-GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0]) {
+	GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0])
+	{
 		return;
 	}
 
@@ -152,6 +156,7 @@ GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0]) {
 	waterCycle = 0.0f;
 	currentFrame = 0;
 	frameTime = 0.0f;
+	skyboxRotate = 0.0f;
 	init = true;
 }
 
@@ -173,7 +178,6 @@ Renderer ::~Renderer(void) {
 	delete sceneShader;
 	delete processShader;
 
-
 	glDeleteTextures(2, bufferColourTex);
 	glDeleteTextures(1, &bufferDepthTex);
 	glDeleteFramebuffers(1, &bufferFBO);
@@ -186,6 +190,7 @@ void Renderer::UpdateScene(float dt) {
 	viewMatrix = camera -> BuildViewMatrix();
 	waterRotate += dt * 2.0f; //2 degrees a second
 	waterCycle += dt * 0.25f; // 10 units a second
+	skyboxRotate += ROTATE_SPEED * dt;
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
 
 	frameTime -= dt;
@@ -197,13 +202,10 @@ void Renderer::UpdateScene(float dt) {
 }
 
 
-void Renderer::RenderScene() {
-	
+void Renderer::RenderScene() 
+{
 		DrawScene();
 }
-
-
-
 
 void Renderer::DrawScene()
 {
@@ -211,7 +213,7 @@ void Renderer::DrawScene()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT );
 	BindShader(sceneShader);
 	UpdateShaderMatrices();
-
+	
 	DrawSkybox();
 	DrawHeightmap();
 	DrawCharAnim();
@@ -220,10 +222,10 @@ void Renderer::DrawScene()
 	DrawNodes();
 	ClearNodeLists();
 	DrawWater();
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 }
+
 
 void Renderer::DrawPostProcess()
 {
@@ -289,7 +291,7 @@ void Renderer::DrawCharAnim()
 	const Matrix4* invBindPose = charMesh->GetInverseBindPose();
 	const Matrix4* frameData = charAnim->GetJointData(currentFrame);
 	Vector3 hSize = heightMap->GetHeightmapSize();
-	Matrix4 model = Matrix4::Translation(Vector3(int(hSize.x/2), 100.0f, int(hSize.z/2))) * Matrix4::Scale(Vector3(100.0f, 100.0f, 100.0f));
+	Matrix4 model = Matrix4::Translation(Vector3(int(hSize.x * 0.5f), 200.0f, int(hSize.z * 0.5f))) * Matrix4::Scale(Vector3(50.0f, 50.0f, 50.0f));
 
 	glUniformMatrix4fv(glGetUniformLocation(charShader->GetProgram(), "modelMatrix"), 1, false, model.values);
 
@@ -297,7 +299,6 @@ void Renderer::DrawCharAnim()
 	{
 		frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
 	}
-
 	int j = glGetUniformLocation(charShader->GetProgram(),"joints");
 	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
 	
@@ -327,6 +328,9 @@ void Renderer::DrawNode(SceneNode* n)
 		BindShader(treeShader);
 		glUniform1i(glGetUniformLocation(treeShader->GetProgram(), "diffuseTex"), 0);
 		glUniform4fv(glGetUniformLocation(treeShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
+		
+		glUniform4fv(glGetUniformLocation(treeShader->GetProgram(), "fogColour"), 1, (float*)fogColour);
+
 		UpdateShaderMatrices();
 
 		for (int i = 0; i < tree->GetSubMeshCount(); ++i)
@@ -334,6 +338,7 @@ void Renderer::DrawNode(SceneNode* n)
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, matTextures[i]);
 			glUniform1i(glGetUniformLocation(treeShader->GetProgram(), "useTexture"), matTextures[i]);
+
 		
 			Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
 			glUniformMatrix4fv(glGetUniformLocation(treeShader->GetProgram(), "modelMatrix"), 1, false, model.values);
@@ -353,10 +358,11 @@ void Renderer::BuildNodeLists(SceneNode* from)
 		if (from->GetColour().w < 1.0f) {
 			transparentNodeList.push_back(from);
 		}
-		else {
+		else 
+		{
 			nodeList.push_back(from);
 		}
-//	}
+	//}
 	for(vector <SceneNode*>::const_iterator i = from->GetChildIteratorStart();
 		i != from->GetChildIteratorEnd(); ++i) {
 		BuildNodeLists((*i));
@@ -379,13 +385,21 @@ void Renderer::ClearNodeLists()
 	nodeList.clear();
 }
 
+
 void Renderer::DrawSkybox() {
 	glDepthMask(GL_FALSE);
 
 	BindShader(skyboxShader);
-	viewMatrix = camera->BuildViewMatrix();
+
+	glUniform4fv(glGetUniformLocation(skyboxShader->GetProgram(), "fogColour"), 1, (float*)fogColour);
+
+	viewMatrix = camera->BuildViewMatrix() * Matrix4::Rotation(skyboxRotate, Vector3(0, 1, 0));
+
+	//textureMatrix = Matrix4::Rotation(skyboxRotate, Vector3(0, 1, 0));
+	
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
+	
 	UpdateShaderMatrices();
 	quad->Draw();
 	glDepthMask(GL_TRUE);
@@ -414,6 +428,8 @@ void Renderer::DrawHeightmap() {
 
 	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
+	glUniform4fv(glGetUniformLocation(treeShader->GetProgram(), "fogColour"), 1, (float*)fogColour);
+
 	Vector3 hSize = heightMap->GetHeightmapSize();
 	glUniform1f(glGetUniformLocation(lightShader->GetProgram(), "vHeight"), hSize.y);
 
@@ -425,7 +441,6 @@ void Renderer::DrawHeightmap() {
 
 	UpdateShaderMatrices();
 	SetShaderLight(*light);
-
 	heightMap -> Draw();
 	
 }
@@ -438,6 +453,8 @@ void Renderer::DrawWater() {
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "diffuseTex"), 0);
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "cubeTex"), 2);
 
+	glUniform4fv(glGetUniformLocation(reflectShader->GetProgram(), "fogColour"), 1, (float*)fogColour);
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, waterTex);
 	glActiveTexture(GL_TEXTURE2);
@@ -449,6 +466,5 @@ void Renderer::DrawWater() {
 	
 	textureMatrix.ToIdentity();
 	UpdateShaderMatrices();
-
 	quad -> Draw();
 }

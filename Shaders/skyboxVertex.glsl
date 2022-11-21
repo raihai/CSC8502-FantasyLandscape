@@ -3,6 +3,8 @@
 uniform mat4 modelMatrix ;
 uniform mat4 viewMatrix ;
 uniform mat4 projMatrix ;
+uniform mat4 textureMatrix;
+
 in vec3 position ;
 
 out Vertex {
@@ -16,4 +18,5 @@ void main(void)
 	pos.xy *= vec2( invproj[0][0], invproj[1][1]);
 	pos.z = -1.0f ;
 	OUT.viewDir = transpose( mat3(viewMatrix )) * normalize(pos);
-	gl_Position = vec4(position, 1.0);}
+	gl_Position = vec4(position, 1.0);
+}

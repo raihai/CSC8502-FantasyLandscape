@@ -220,18 +220,17 @@ void Mesh::GenerateNormals()
 	int triCount = GetTriCount();
 
 	for (int i = 0; i < triCount; ++i) {
-		 unsigned int a = 0;
+		unsigned int a = 0;
 		unsigned int b = 0;
 		unsigned int c = 0;
 		GetVertexIndicesForTri(i, a, b, c);
 		
-			Vector3 normal = Vector3::Cross((vertices[b] - vertices[a]),
+		Vector3 normal = Vector3::Cross((vertices[b] - vertices[a]),
 				(vertices[c] - vertices[a]));
 		
-			normals[a] += normal;
+		normals[a] += normal;
 		normals[b] += normal;
 		normals[c] += normal;
-		
 	}
 	for (GLuint i = 0; i < numVertices; ++i) {
 		normals[i].Normalise();

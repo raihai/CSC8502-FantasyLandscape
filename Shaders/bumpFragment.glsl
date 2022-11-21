@@ -10,6 +10,7 @@ uniform vec4 lightColour ;
 uniform vec3 lightPos ;
 uniform float lightRadius ;
 uniform float vHeight;
+uniform vec4 fogColour;
 in Vertex {
 vec4 colour ;
 vec2 texCoord ;
@@ -17,6 +18,7 @@ vec3 normal ;
 vec3 tangent ; 
 vec3 binormal ; 
 vec3 worldPos ;
+float vis;
 } IN ;
 
 out vec4 fragColour ;
@@ -30,7 +32,8 @@ void main ( void ) {
 	mat3 TBN = mat3(normalize( IN.tangent ) ,normalize( IN.binormal ), normalize(IN.normal));
 	
 	vec3 bumpNormal = texture(rockBump, IN.texCoord).rgb ;
-	bumpNormal = normalize( TBN * normalize(bumpNormal * 2.0 - 1.0 ));	
+	bumpNormal = normalize(bumpNormal * 2.0 - 1.0);
+	bumpNormal = normalize( TBN * bumpNormal  );	
 
 	vec4 diffuse = vec4(0.0);
 	float fScale = IN.worldPos.y/vHeight;
@@ -80,4 +83,7 @@ void main ( void ) {
 	fragColour.rgb += ( lightColour.rgb * specFactor )* attenuation * 0.2;
 	fragColour.rgb += surface * 0.3f;
 	fragColour.a = diffuse.a;
+
+	float visible = IN.vis;
+	fragColour = mix(fogColour, fragColour, visible );
  }
