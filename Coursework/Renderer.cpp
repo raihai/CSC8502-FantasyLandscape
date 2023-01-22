@@ -10,7 +10,7 @@
 #include <cstdlib>
 
 const int POST_PASSES = 10;
-const float ROTATE_SPEED = 2.5f;
+const float ROTATE_SPEED = 2.0f;
 
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
