@@ -16,14 +16,27 @@ int main()	{
 	w.LockMouseToWindow(true);
 
 	while(w.UpdateWindow()  && !Window::GetKeyboard()->KeyDown(KEYBOARD_ESCAPE)){
+		
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_B)) {
+			renderer.moveCamera();
+		}
+
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_V)) {
+			renderer.stopCamera();
+		}
 
 		renderer.UpdateScene(w.GetTimer()->GetTimeDeltaSeconds());
 		renderer.RenderScene();
-
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_T)) {
 			renderer.DrawPostProcess();
 		}
-		renderer.PresentScene();
+
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_U)) {
+			renderer.DrawTwoScene();
+			renderer.PresentTwoScene();
+		}
+		else
+			renderer.PresentScene();
 		
 		renderer.SwapBuffers();
 

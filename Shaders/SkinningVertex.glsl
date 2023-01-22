@@ -9,10 +9,15 @@ in vec2 texCoord;
 in vec4 jointWeights;
 in ivec4 jointIndices;
 
+const float density = 0.0004;
+const float gradient = 5;
+
 uniform mat4 joints[128];
 
-out Vertex {
+out Vertex 
+{
 	vec2 texCoord;
+	float vis;
 } OUT;
 
 void main(void) {
@@ -26,6 +31,15 @@ void main(void) {
 
 		skelPos += joints[jointIndex] * localPos * jointWeight;
 	}
+
+	vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+	vec4 positionRelativeToCam = viewMatrix * worldPosition;
+	
+	float distance = length(positionRelativeToCam.xyz);
+	float visib = exp(-pow((distance * density), gradient));
+	visib = clamp(visib, 0.0, 1.0);
+	
+	OUT.vis = visib;
 
 	mat4 mvp = projMatrix * viewMatrix * modelMatrix;
 	gl_Position = mvp * vec4(skelPos.xyz, 1.0);

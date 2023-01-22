@@ -54,6 +54,8 @@ public:
 
 	static Mesh* GenerateTriangle();
 	static Mesh* GenerateQuad();
+	static Mesh* GenerateRightQuad();
+	static Mesh* GenerateLeftQuad();
 
 
 

@@ -6,7 +6,7 @@ uniform mat4 projMatrix ;
 uniform mat4 textureMatrix ;
 
 const float density = 0.0005;
-const float gradient = 10;
+const float gradient = 20;
 
 in vec3 position ;
 in vec3 normal ;

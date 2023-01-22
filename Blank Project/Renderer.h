@@ -18,15 +18,24 @@ public:
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
 	void PresentScene();
+	void PresentTwoScene();
 	void DrawPostProcess();
-	
+	void DrawTwoScene();
+
+	void moveCamera();
+	void stopCamera(); 
 
 protected:
 	void DrawScene();
-	void DrawFog();
+	void animateCam(float dt);
+
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
+
+	void DrawHeightmap2();
+	void DrawWater2();
+	void DrawSkybox2();
 	
 	void DrawCharAnim();
 	void DrawNodes();
@@ -36,21 +45,20 @@ protected:
 	void SortNodeLists();
 	void ClearNodeLists();
 
-
-	
 	Shader * lightShader;
 	Shader * reflectShader;
 	Shader * skyboxShader;
 	Shader* treeShader;
 	Shader* charShader;
-
 	Shader* sceneShader;
 	Shader * processShader;
-
 
 	
 	HeightMap * heightMap;
 	Mesh * quad;
+	Mesh* rightQuad;
+	Mesh* leftQuad;
+
 	Mesh* tree;
 	Mesh* charMesh;
 	
@@ -65,6 +73,7 @@ protected:
 
 	Light* light;
 	Camera * camera;
+	Camera* secCamera;
 	int currentFrame;
 	float frameTime;
 
@@ -79,14 +88,23 @@ protected:
 
 	GLuint bufferFBO;
 	GLuint processFBO;
-	GLuint bufferColourTex[2];
+	GLuint secBufferFBO;
+
+	GLuint bufferColourTex[3];
 	GLuint bufferDepthTex;
 
 	float sceneTime;
 	float waterRotate;
 	float waterCycle;
 	float skyboxRotate;
+	int stages = 0;
+	float timeP = 0;
 
+	bool moveCam;
+	Vector3 firsPos;
+	Vector3 secPos;
+	Vector3 thirPos;
+	Vector3 curPos;
 
 	Vector4* fogColour;
 	vector <SceneNode*> transparentNodeList;

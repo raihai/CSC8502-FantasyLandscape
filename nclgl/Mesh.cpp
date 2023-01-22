@@ -139,6 +139,81 @@ Mesh* Mesh::GenerateQuad()
 }
 
 
+Mesh* Mesh::GenerateRightQuad()
+{
+	Mesh* m = new Mesh();
+	m->numVertices = 4;
+	m->type = GL_TRIANGLE_STRIP;
+
+	m->vertices = new Vector3[m->numVertices];
+	m->textureCoords = new Vector2[m->numVertices];
+	m->colours = new Vector4[m->numVertices];
+
+	m->vertices[0] = Vector3(0.0f, 1.0f, 0.0f);
+	m->vertices[1] = Vector3(0.0f, -1.0f, 0.0f);
+	m->vertices[2] = Vector3(1.0f, 1.0f, 0.0f);
+	m->vertices[3] = Vector3(1.0f, -1.0f, 0.0f);
+
+	m->textureCoords[0] = Vector2(0.0f, 1.0f);
+	m->textureCoords[1] = Vector2(0.0f, 0.0f);
+	m->textureCoords[2] = Vector2(1.0f, 1.0f);
+	m->textureCoords[3] = Vector2(1.0f, 0.0f);
+
+	for (int i = 0; i < 4; ++i) {
+		m->colours[i] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+
+	m->normals = new Vector3[m->numVertices]; // Init new var !
+	m->tangents = new Vector4[m->numVertices]; // Init new var !
+
+	for (int i = 0; i < 4; ++i) {
+		m->colours[i] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		m->normals[i] = Vector3(0.0f, 0.0f, -1.0f); // New !
+		m->tangents[i] = Vector4(1.0f, 0.0f, 0.0f, 1.0f); // New !
+	}
+
+	m->BufferData();
+	return m;
+}
+
+Mesh* Mesh::GenerateLeftQuad()
+{
+	Mesh* m = new Mesh();
+	m->numVertices = 4;
+	m->type = GL_TRIANGLE_STRIP;
+
+	m->vertices = new Vector3[m->numVertices];
+	m->textureCoords = new Vector2[m->numVertices];
+	m->colours = new Vector4[m->numVertices];
+
+	m->vertices[0] = Vector3(-1.0f, 1.0f, 0.0f);
+	m->vertices[1] = Vector3(-1.0f, -1.0f, 0.0f);
+	m->vertices[2] = Vector3(0.0f, 1.0f, 0.0f);
+	m->vertices[3] = Vector3(0.0f, -1.0f, 0.0f);
+
+	m->textureCoords[0] = Vector2(0.0f, 1.0f);
+	m->textureCoords[1] = Vector2(0.0f, 0.0f);
+	m->textureCoords[2] = Vector2(1.0f, 1.0f);
+	m->textureCoords[3] = Vector2(1.0f, 0.0f);
+
+	for (int i = 0; i < 4; ++i) {
+		m->colours[i] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+	}
+
+	m->normals = new Vector3[m->numVertices]; // Init new var !
+	m->tangents = new Vector4[m->numVertices]; // Init new var !
+
+	for (int i = 0; i < 4; ++i) {
+		m->colours[i] = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+		m->normals[i] = Vector3(0.0f, 0.0f, -1.0f); // New !
+		m->tangents[i] = Vector4(1.0f, 0.0f, 0.0f, 1.0f); // New !
+	}
+
+	m->BufferData();
+	return m;
+}
+
+
 
 
 void UploadAttribute(GLuint* id, int numElements, int dataSize, int attribSize, int attribID, void* pointer, const string&debugName) {

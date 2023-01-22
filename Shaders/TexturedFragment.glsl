@@ -6,6 +6,9 @@ vec2 texCoord;
 } IN;
 
 out vec4 fragColour;
-void main(void) {
-fragColour = texture(diffuseTex , IN.texCoord );
+void main(void) 
+{
+	fragColour = texture(diffuseTex , IN.texCoord );
+
+
 }
