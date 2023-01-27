@@ -1,3 +1,3 @@
 # CSC8502-FantasyLandscape
 
-Created a program using C++ and OpenGL to render a fantasy landscape
+Using the ncl framework, I rendered a program using C++ and OpenGL to render a fantasy landscape
